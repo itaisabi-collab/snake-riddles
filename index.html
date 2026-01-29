@@ -106,7 +106,7 @@
             text-align: center;
         }
 
-        #start-btn {
+        #start-btn, .btn {
             background: #00ff88;
             color: #1a1a2e;
             border: none;
@@ -118,43 +118,203 @@
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        #start-btn:hover {
+        #start-btn:hover, .btn:hover {
             transform: scale(1.05);
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
         }
 
-        #start-btn:active {
+        #start-btn:active, .btn:active {
             transform: scale(0.98);
         }
 
         .game-over #message {
             color: #ff6b6b;
         }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 3px solid #00ff88;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.3);
+        }
+
+        .modal h2 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .modal .final-score {
+            font-size: 3em;
+            color: #00ff88;
+            margin: 20px 0;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            text-align: center;
+            margin: 15px 0;
+            outline: none;
+        }
+
+        .modal input:focus {
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+
+        .modal input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Leaderboard styles */
+        .leaderboard {
+            margin-top: 20px;
+            text-align: right;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .leaderboard h3 {
+            color: #ffc832;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .leaderboard-entry:nth-child(2) {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid gold;
+        }
+
+        .leaderboard-entry:nth-child(3) {
+            background: rgba(192, 192, 192, 0.15);
+            border: 1px solid silver;
+        }
+
+        .leaderboard-entry:nth-child(4) {
+            background: rgba(205, 127, 50, 0.15);
+            border: 1px solid #cd7f32;
+        }
+
+        .leaderboard-entry.highlight {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+        }
+
+        .rank {
+            font-weight: bold;
+            color: #ffc832;
+            min-width: 30px;
+        }
+
+        .player-name {
+            flex: 1;
+            margin: 0 10px;
+            color: #fff;
+        }
+
+        .player-score {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            margin-top: 10px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
     </style>
 </head>
 <body>
-    <h1>Snake Riddles</h1>
+    <h1>🐍 Snake Riddles 🧩</h1>
 
     <div class="game-container">
         <div id="riddle-box">
-            <div id="riddle-text">Solve the riddle and eat the correct answer!</div>
+            <div id="riddle-text">פתור את החידה ואכול את התשובה הנכונה!</div>
             <div id="hint"></div>
         </div>
 
         <canvas id="game-canvas" width="400" height="400"></canvas>
 
         <div class="stats">
-            <div class="stat">Score: <span class="stat-value" id="score">0</span></div>
-            <div class="stat">Level: <span class="stat-value" id="level">1</span></div>
-            <div class="stat">Length: <span class="stat-value" id="snake-length">3</span></div>
+            <div class="stat">ניקוד: <span class="stat-value" id="score">0</span></div>
+            <div class="stat">שלב: <span class="stat-value" id="level">1</span></div>
+            <div class="stat">אורך: <span class="stat-value" id="snake-length">3</span></div>
         </div>
 
         <div id="message"></div>
 
-        <button id="start-btn">Start Game</button>
+        <button id="start-btn">התחל משחק</button>
 
         <div class="controls">
-            Desktop: Arrow keys / WASD | Mobile: Swipe to change direction
+            מחשב: חצים / WASD | טלפון: החלק או לחץ לכיוון
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="game-over-modal">
+        <div class="modal-content">
+            <h2>🎮 Game Over!</h2>
+            <div id="game-over-reason"></div>
+            <div class="final-score" id="final-score">0</div>
+            <input type="text" id="player-name" placeholder="הכנס את השם שלך" maxlength="20" autocomplete="off">
+            <div class="btn-group">
+                <button class="btn" id="save-score-btn">שמור ניקוד</button>
+            </div>
+            <div class="leaderboard" id="leaderboard">
+                <h3>🏆 טבלת הליגה</h3>
+                <div id="leaderboard-entries"></div>
+            </div>
+            <div class="btn-group">
+                <button class="btn" id="play-again-btn">שחק שוב</button>
+            </div>
         </div>
     </div>
 
@@ -174,12 +334,22 @@
         const startBtn = document.getElementById('start-btn');
         const gameContainer = document.querySelector('.game-container');
 
+        // Modal Elements
+        const modal = document.getElementById('game-over-modal');
+        const gameOverReason = document.getElementById('game-over-reason');
+        const finalScoreEl = document.getElementById('final-score');
+        const playerNameInput = document.getElementById('player-name');
+        const saveScoreBtn = document.getElementById('save-score-btn');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const leaderboardEntries = document.getElementById('leaderboard-entries');
+
         // Game Constants
         const GRID_SIZE = 20;
         const CELL_SIZE = canvas.width / GRID_SIZE;
         const BASE_SPEED = 150;
         const MIN_SPEED = 70;
         const SPEED_DECREASE_PER_LEVEL = 10;
+        const STORAGE_KEY = 'snakeRiddlesLeaderboard';
 
         // Game State
         let snake = [];
@@ -193,7 +363,8 @@
         let gameLoopId = null;
         let gameSpeed = BASE_SPEED;
         let isGameRunning = false;
-        let growPending = 0; // How many segments to grow
+        let growPending = 0;
+        let lastSavedEntry = null;
 
         // Riddles Database
         const riddles = [
@@ -208,16 +379,92 @@
             { q: "Next: 2, 4, 6, ?", a: 8, wrong: [7, 9, 10, 5] },
             { q: "Next: 1, 3, 5, ?", a: 7, wrong: [6, 8, 9, 4] },
             { q: "Next: 3, 6, 9, ?", a: 12, wrong: [10, 11, 13, 15] },
-            { q: "Days in a week?", a: 7, wrong: [5, 6, 8, 10] },
-            { q: "Months in a year?", a: 12, wrong: [10, 11, 13, 14] },
-            { q: "Minutes in an hour?", a: 60, wrong: [30, 45, 50, 100] },
-            { q: "Sides of a triangle?", a: 3, wrong: [2, 4, 5, 6] },
-            { q: "Sides of a square?", a: 4, wrong: [3, 5, 6, 8] },
+            { q: "ימים בשבוע?", a: 7, wrong: [5, 6, 8, 10] },
+            { q: "חודשים בשנה?", a: 12, wrong: [10, 11, 13, 14] },
+            { q: "דקות בשעה?", a: 60, wrong: [30, 45, 50, 100] },
+            { q: "צלעות במשולש?", a: 3, wrong: [2, 4, 5, 6] },
+            { q: "צלעות בריבוע?", a: 4, wrong: [3, 5, 6, 8] },
             { q: "25 + 17 = ?", a: 42, wrong: [40, 43, 41, 38] },
             { q: "6 × 7 = ?", a: 42, wrong: [36, 48, 35, 49] },
-            { q: "Zeros in 100?", a: 2, wrong: [1, 3, 0, 4] },
-            { q: "Eyes on a spider?", a: 8, wrong: [2, 4, 6, 10] },
+            { q: "אפסים ב-100?", a: 2, wrong: [1, 3, 0, 4] },
+            { q: "עיניים לעכביש?", a: 8, wrong: [2, 4, 6, 10] },
         ];
+
+        // Leaderboard Functions
+        function getLeaderboard() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveLeaderboard(leaderboard) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(leaderboard));
+            } catch (e) {
+                console.error('Failed to save leaderboard:', e);
+            }
+        }
+
+        function addScore(name, score) {
+            const leaderboard = getLeaderboard();
+            const entry = {
+                name: name.trim() || 'אנונימי',
+                score: score,
+                date: new Date().toISOString()
+            };
+            leaderboard.push(entry);
+            // Sort by score descending
+            leaderboard.sort((a, b) => b.score - a.score);
+            // Keep top 100
+            if (leaderboard.length > 100) {
+                leaderboard.length = 100;
+            }
+            saveLeaderboard(leaderboard);
+            return entry;
+        }
+
+        function renderLeaderboard(highlightEntry = null) {
+            const leaderboard = getLeaderboard();
+            leaderboardEntries.innerHTML = '';
+
+            if (leaderboard.length === 0) {
+                leaderboardEntries.innerHTML = '<div style="color: #888; padding: 20px;">אין עדיין ניקודים. תהיה הראשון! 🏆</div>';
+                return;
+            }
+
+            // Show top 10
+            const topEntries = leaderboard.slice(0, 10);
+            topEntries.forEach((entry, index) => {
+                const div = document.createElement('div');
+                div.className = 'leaderboard-entry';
+                
+                // Highlight the just-saved entry
+                if (highlightEntry && 
+                    entry.name === highlightEntry.name && 
+                    entry.score === highlightEntry.score &&
+                    entry.date === highlightEntry.date) {
+                    div.classList.add('highlight');
+                }
+
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                
+                div.innerHTML = `
+                    <span class="rank">${medal}</span>
+                    <span class="player-name">${escapeHtml(entry.name)}</span>
+                    <span class="player-score">${entry.score}</span>
+                `;
+                leaderboardEntries.appendChild(div);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         // Utility Functions
         function shuffleArray(arr) {
@@ -250,11 +497,8 @@
         }
 
         function isPositionValid(pos, existingPositions) {
-            // Not on snake
             if (isSnakeAt(pos.x, pos.y)) return false;
-            // Not on existing food positions
             if (existingPositions.some(p => p.x === pos.x && p.y === pos.y)) return false;
-            // Not too close to snake head
             const head = snake[0];
             if (Math.abs(pos.x - head.x) < 2 && Math.abs(pos.y - head.y) < 2) return false;
             return true;
@@ -284,13 +528,10 @@
             }
         }
 
-        // Text-to-Speech for riddles
         function speakRiddle(text) {
             if ('speechSynthesis' in window) {
-                // Cancel any ongoing speech
                 speechSynthesis.cancel();
                 
-                // Convert math symbols to Hebrew words
                 let spokenText = text
                     .replace(/\+/g, ' ועוד ')
                     .replace(/-/g, ' פחות ')
@@ -304,7 +545,6 @@
                 utterance.rate = 0.9;
                 utterance.pitch = 1.1;
                 
-                // Try to find Hebrew voice
                 const voices = speechSynthesis.getVoices();
                 const hebrewVoice = voices.find(v => v.lang.includes('he'));
                 if (hebrewVoice) {
@@ -318,15 +558,12 @@
         function setNewRiddle() {
             currentRiddle = getRandomRiddle();
             riddleText.textContent = currentRiddle.q;
-            hintEl.textContent = "Find and eat the correct answer!";
+            hintEl.textContent = "מצא ואכול את התשובה הנכונה!";
             spawnFoods();
-            
-            // Speak the riddle!
             speakRiddle(currentRiddle.q);
         }
 
         function initGame() {
-            // Initialize snake in center
             snake = [
                 { x: 10, y: 10 },
                 { x: 9, y: 10 },
@@ -339,6 +576,7 @@
             riddlesSolved = 0;
             gameSpeed = BASE_SPEED;
             growPending = 0;
+            lastSavedEntry = null;
 
             updateStats();
             showMessage('', '#00ff88');
@@ -357,11 +595,9 @@
         }
 
         function draw() {
-            // Clear canvas
             ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw grid
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
             ctx.lineWidth = 1;
             for (let i = 0; i <= GRID_SIZE; i++) {
@@ -375,12 +611,10 @@
                 ctx.stroke();
             }
 
-            // Draw food
             for (const food of foods) {
                 const x = food.x * CELL_SIZE + CELL_SIZE / 2;
                 const y = food.y * CELL_SIZE + CELL_SIZE / 2;
 
-                // Food circle
                 ctx.beginPath();
                 ctx.arc(x, y, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(255, 200, 50, 0.3)';
@@ -389,7 +623,6 @@
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // Food number
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 14px Arial';
                 ctx.textAlign = 'center';
@@ -397,38 +630,34 @@
                 ctx.fillText(food.value, x, y);
             }
 
-            // Draw snake
             for (let i = 0; i < snake.length; i++) {
                 const segment = snake[i];
                 const x = segment.x * CELL_SIZE;
                 const y = segment.y * CELL_SIZE;
 
-                // Segment color (head is brightest)
                 const alpha = 1 - (i / snake.length) * 0.5;
                 ctx.fillStyle = i === 0 ? '#00ff88' : `rgba(0, 255, 136, ${alpha})`;
 
-                // Draw rounded rectangle
                 ctx.beginPath();
                 ctx.roundRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, 5);
                 ctx.fill();
 
-                // Draw eyes on head
                 if (i === 0) {
                     ctx.fillStyle = '#1a1a2e';
                     const eyeSize = 3;
                     const eyeOffset = CELL_SIZE / 4;
 
                     let eye1, eye2;
-                    if (direction.x === 1) { // Right
+                    if (direction.x === 1) {
                         eye1 = { x: x + CELL_SIZE - 6, y: y + eyeOffset };
                         eye2 = { x: x + CELL_SIZE - 6, y: y + CELL_SIZE - eyeOffset };
-                    } else if (direction.x === -1) { // Left
+                    } else if (direction.x === -1) {
                         eye1 = { x: x + 6, y: y + eyeOffset };
                         eye2 = { x: x + 6, y: y + CELL_SIZE - eyeOffset };
-                    } else if (direction.y === -1) { // Up
+                    } else if (direction.y === -1) {
                         eye1 = { x: x + eyeOffset, y: y + 6 };
                         eye2 = { x: x + CELL_SIZE - eyeOffset, y: y + 6 };
-                    } else { // Down
+                    } else {
                         eye1 = { x: x + eyeOffset, y: y + CELL_SIZE - 6 };
                         eye2 = { x: x + CELL_SIZE - eyeOffset, y: y + CELL_SIZE - 6 };
                     }
@@ -446,32 +675,26 @@
         function update() {
             if (!isGameRunning) return;
 
-            // Apply queued direction change
             direction = { ...nextDirection };
 
-            // Calculate new head position
             const newHead = {
                 x: snake[0].x + direction.x,
                 y: snake[0].y + direction.y
             };
 
-            // Check wall collision
             if (newHead.x < 0 || newHead.x >= GRID_SIZE ||
                 newHead.y < 0 || newHead.y >= GRID_SIZE) {
-                gameOver("Hit the wall!");
+                gameOver("נגעת בקיר!");
                 return;
             }
 
-            // Check self collision
             if (isSnakeAt(newHead.x, newHead.y)) {
-                gameOver("Ate yourself!");
+                gameOver("אכלת את עצמך!");
                 return;
             }
 
-            // Add new head
             snake.unshift(newHead);
 
-            // Check if food was eaten
             const eatenFoodIndex = foods.findIndex(f => f.x === newHead.x && f.y === newHead.y);
 
             if (eatenFoodIndex !== -1) {
@@ -479,26 +702,22 @@
                 foods.splice(eatenFoodIndex, 1);
 
                 if (eatenFood.isCorrect) {
-                    // CORRECT ANSWER - Snake GROWS
-                    growPending += 2; // Grow by 2 segments for correct answer
+                    growPending += 2;
                     score += 10 * level;
                     riddlesSolved++;
 
-                    showMessage("Correct! +" + (10 * level) + " points", '#00ff88');
+                    showMessage("נכון! +" + (10 * level) + " נקודות", '#00ff88');
 
-                    // Clear remaining foods
                     foods = [];
 
-                    // Level up every 5 riddles
                     if (riddlesSolved % 5 === 0) {
                         level++;
                         gameSpeed = Math.max(MIN_SPEED, BASE_SPEED - (level - 1) * SPEED_DECREASE_PER_LEVEL);
-                        showMessage("Correct! Level " + level + "!", '#00ff88');
+                        showMessage("נכון! שלב " + level + "!", '#00ff88');
                     }
 
                     updateStats();
 
-                    // Set new riddle after delay
                     setTimeout(() => {
                         if (isGameRunning) {
                             showMessage('', '#00ff88');
@@ -507,10 +726,8 @@
                     }, 1000);
 
                 } else {
-                    // WRONG ANSWER - Snake SHRINKS
-                    showMessage("Wrong! Answer was " + currentRiddle.a, '#ff6b6b');
+                    showMessage("טעות! התשובה היתה " + currentRiddle.a, '#ff6b6b');
 
-                    // Shrink snake (remove 2 segments, but keep minimum 2)
                     const shrinkAmount = Math.min(2, snake.length - 2);
                     for (let i = 0; i < shrinkAmount; i++) {
                         if (snake.length > 2) {
@@ -518,13 +735,11 @@
                         }
                     }
 
-                    // Clear remaining foods
                     foods = [];
 
                     score = Math.max(0, score - 5);
                     updateStats();
 
-                    // Set new riddle after delay
                     setTimeout(() => {
                         if (isGameRunning) {
                             showMessage('', '#00ff88');
@@ -534,10 +749,8 @@
                 }
             }
 
-            // Handle tail: grow if pending, otherwise remove tail
             if (growPending > 0) {
                 growPending--;
-                // Don't remove tail = snake grows
             } else {
                 snake.pop();
             }
@@ -545,7 +758,6 @@
             updateStats();
             draw();
 
-            // Schedule next update
             gameLoopId = setTimeout(update, gameSpeed);
         }
 
@@ -557,12 +769,24 @@
             }
 
             gameContainer.classList.add('game-over');
-            showMessage(reason + " Final score: " + score, '#ff6b6b');
-            startBtn.textContent = "Play Again";
-            startBtn.style.display = "block";
-
             canvas.style.borderColor = '#ff6b6b';
             canvas.style.boxShadow = '0 0 30px rgba(255, 107, 107, 0.5)';
+
+            // Show modal
+            gameOverReason.textContent = reason;
+            finalScoreEl.textContent = score;
+            playerNameInput.value = '';
+            lastSavedEntry = null;
+            
+            // Update button states
+            saveScoreBtn.disabled = false;
+            saveScoreBtn.textContent = 'שמור ניקוד';
+            
+            renderLeaderboard();
+            modal.classList.add('active');
+            
+            // Focus on name input
+            setTimeout(() => playerNameInput.focus(), 100);
         }
 
         function startGame() {
@@ -571,6 +795,7 @@
                 gameLoopId = null;
             }
 
+            modal.classList.remove('active');
             gameContainer.classList.remove('game-over');
             canvas.style.borderColor = '#00ff88';
             canvas.style.boxShadow = '0 0 30px rgba(0, 255, 136, 0.3)';
@@ -583,11 +808,31 @@
             gameLoopId = setTimeout(update, gameSpeed);
         }
 
-        // Input: Set direction (with validation)
+        // Save score button
+        saveScoreBtn.addEventListener('click', () => {
+            if (lastSavedEntry) return; // Already saved
+            
+            const name = playerNameInput.value.trim() || 'אנונימי';
+            lastSavedEntry = addScore(name, score);
+            renderLeaderboard(lastSavedEntry);
+            
+            saveScoreBtn.disabled = true;
+            saveScoreBtn.textContent = 'נשמר! ✓';
+        });
+
+        // Enter key saves score
+        playerNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                saveScoreBtn.click();
+            }
+        });
+
+        // Play again button
+        playAgainBtn.addEventListener('click', startGame);
+
         function setDirection(newDir) {
             if (!isGameRunning) return;
 
-            // Prevent 180-degree turns
             if (newDir.x !== 0 && direction.x !== 0) return;
             if (newDir.y !== 0 && direction.y !== 0) return;
 
@@ -624,7 +869,7 @@
             }
         });
 
-        // Touch Controls - Swipe based
+        // Touch Controls
         let touchStartX = 0;
         let touchStartY = 0;
         let touchStartTime = 0;
@@ -632,6 +877,7 @@
         const MAX_SWIPE_TIME = 500;
 
         function handleTouchStart(e) {
+            if (modal.classList.contains('active')) return;
             e.preventDefault();
             const touch = e.touches[0];
             touchStartX = touch.clientX;
@@ -640,10 +886,12 @@
         }
 
         function handleTouchMove(e) {
+            if (modal.classList.contains('active')) return;
             e.preventDefault();
         }
 
         function handleTouchEnd(e) {
+            if (modal.classList.contains('active')) return;
             e.preventDefault();
 
             if (!isGameRunning) return;
@@ -654,37 +902,30 @@
             const deltaY = touch.clientY - touchStartY;
             const deltaTime = Date.now() - touchStartTime;
 
-            // Must be a quick swipe
             if (deltaTime > MAX_SWIPE_TIME) return;
 
             const absX = Math.abs(deltaX);
             const absY = Math.abs(deltaY);
 
-            // Must have minimum distance
             if (absX < MIN_SWIPE_DISTANCE && absY < MIN_SWIPE_DISTANCE) {
-                // Tap detected - use tap position relative to snake head
                 handleTapDirection(touch.clientX, touch.clientY);
                 return;
             }
 
-            // Determine swipe direction
             if (absX > absY) {
-                // Horizontal swipe
                 if (deltaX > 0) {
-                    setDirection({ x: 1, y: 0 }); // Right
+                    setDirection({ x: 1, y: 0 });
                 } else {
-                    setDirection({ x: -1, y: 0 }); // Left
+                    setDirection({ x: -1, y: 0 });
                 }
             } else {
-                // Vertical swipe
                 if (deltaY > 0) {
-                    setDirection({ x: 0, y: 1 }); // Down
+                    setDirection({ x: 0, y: 1 });
                 } else {
-                    setDirection({ x: 0, y: -1 }); // Up
+                    setDirection({ x: 0, y: -1 });
                 }
             }
 
-            // Visual feedback
             flashBorder();
         }
 
@@ -701,14 +942,12 @@
             const deltaY = tapY - head.y;
 
             if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                // Horizontal direction
                 if (deltaX > 0) {
                     setDirection({ x: 1, y: 0 });
                 } else {
                     setDirection({ x: -1, y: 0 });
                 }
             } else {
-                // Vertical direction
                 if (deltaY > 0) {
                     setDirection({ x: 0, y: 1 });
                 } else {
@@ -728,7 +967,6 @@
             }, 50);
         }
 
-        // Attach touch events to entire document for better mobile experience
         document.addEventListener('touchstart', (e) => {
             if (e.target === canvas || e.target === document.body) {
                 handleTouchStart(e);
@@ -747,12 +985,10 @@
             }
         }, { passive: false });
 
-        // Prevent zoom and scroll on mobile
         document.addEventListener('gesturestart', e => e.preventDefault());
         document.addEventListener('gesturechange', e => e.preventDefault());
         document.addEventListener('gestureend', e => e.preventDefault());
 
-        // Start button
         startBtn.addEventListener('click', startGame);
         startBtn.addEventListener('touchend', (e) => {
             e.preventDefault();
@@ -760,7 +996,6 @@
             startGame();
         });
 
-        // Initial draw
         draw();
     })();
     </script>
