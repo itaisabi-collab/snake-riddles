@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐍 נחש חידות</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        #riddle-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px 30px;
+            text-align: center;
+            min-width: 400px;
+            border: 2px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        #riddle-text {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        #hint {
+            color: #00ff88;
+            font-size: 0.9em;
+        }
+        
+        #game-canvas {
+            border: 3px solid #00ff88;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        }
+        
+        .stats {
+            display: flex;
+            gap: 30px;
+            font-size: 1.2em;
+        }
+        
+        .stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        
+        .stat-value {
+            color: #00ff88;
+            font-weight: bold;
+        }
+        
+        #message {
+            font-size: 1.5em;
+            color: #ff6b6b;
+            min-height: 40px;
+        }
+        
+        .controls {
+            margin-top: 10px;
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        /* התאמה לטלפון */
+        @media (max-width: 500px) {
+            #game-canvas {
+                max-width: 90vw;
+                max-height: 50vh;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            #riddle-box {
+                min-width: auto;
+                width: 90vw;
+                padding: 15px;
+            }
+            #riddle-text {
+                font-size: 1.1em;
+            }
+        }
+        
+        #start-btn {
+            background: #00ff88;
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        #start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+        
+        .number-food {
+            position: absolute;
+            font-size: 20px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐍 נחש חידות</h1>
+    
+    <div class="game-container">
+        <div id="riddle-box">
+            <div id="riddle-text">פתור את החידה ואכול את התשובה הנכונה!</div>
+            <div id="hint"></div>
+        </div>
+        
+        <canvas id="game-canvas" width="400" height="400"></canvas>
+        
+        <div class="stats">
+            <div class="stat">ניקוד: <span class="stat-value" id="score">0</span></div>
+            <div class="stat">רמה: <span class="stat-value" id="level">1</span></div>
+            <div class="stat">חידות: <span class="stat-value" id="riddles-solved">0</span></div>
+        </div>
+        
+        <div id="message"></div>
+        
+        <button id="start-btn">התחל משחק</button>
+        
+        <div class="controls">
+            מחשב: חצים / WASD | טלפון: לחץ לכיוון שאתה רוצה
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const riddleText = document.getElementById('riddle-text');
+        const hintEl = document.getElementById('hint');
+        const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
+        const riddlesSolvedEl = document.getElementById('riddles-solved');
+        const messageEl = document.getElementById('message');
+        const startBtn = document.getElementById('start-btn');
+        
+        const GRID_SIZE = 20;
+        const CELL_SIZE = canvas.width / GRID_SIZE;
+        
+        let snake = [];
+        let direction = { x: 1, y: 0 };
+        let nextDirection = { x: 1, y: 0 };
+        let foods = [];
+        let currentRiddle = null;
+        let score = 0;
+        let level = 1;
+        let riddlesSolved = 0;
+        let gameLoop = null;
+        let gameSpeed = 150;
+        
+        // בנק חידות
+        const riddles = [
+            // חשבון פשוט
+            { q: "5 + 3 = ?", a: 8, wrong: [5, 3, 7, 9] },
+            { q: "10 - 4 = ?", a: 6, wrong: [4, 10, 5, 7] },
+            { q: "3 × 3 = ?", a: 9, wrong: [6, 3, 12, 8] },
+            { q: "12 ÷ 4 = ?", a: 3, wrong: [4, 6, 2, 8] },
+            { q: "7 + 8 = ?", a: 15, wrong: [14, 16, 13, 17] },
+            { q: "20 - 7 = ?", a: 13, wrong: [12, 14, 11, 27] },
+            { q: "4 × 5 = ?", a: 20, wrong: [9, 15, 25, 18] },
+            { q: "15 ÷ 3 = ?", a: 5, wrong: [3, 6, 4, 8] },
+            
+            // חידות לוגיות
+            { q: "מה המספר הבא? 2, 4, 6, ?", a: 8, wrong: [7, 9, 10, 5] },
+            { q: "מה המספר הבא? 1, 3, 5, ?", a: 7, wrong: [6, 8, 9, 4] },
+            { q: "מה המספר הבא? 3, 6, 9, ?", a: 12, wrong: [10, 11, 13, 15] },
+            { q: "מה המספר הבא? 1, 4, 9, ?", a: 16, wrong: [12, 14, 18, 25] },
+            
+            // חידות כלליות
+            { q: "כמה ימים בשבוע?", a: 7, wrong: [5, 6, 8, 10] },
+            { q: "כמה חודשים בשנה?", a: 12, wrong: [10, 11, 13, 14] },
+            { q: "כמה דקות בשעה?", a: 60, wrong: [30, 45, 50, 100] },
+            { q: "כמה שניות בדקה?", a: 60, wrong: [30, 45, 100, 50] },
+            { q: "כמה צדדים למשולש?", a: 3, wrong: [2, 4, 5, 6] },
+            { q: "כמה צדדים לריבוע?", a: 4, wrong: [3, 5, 6, 8] },
+            
+            // חשבון קצת יותר מאתגר
+            { q: "25 + 17 = ?", a: 42, wrong: [40, 43, 41, 38] },
+            { q: "100 - 37 = ?", a: 63, wrong: [60, 67, 73, 57] },
+            { q: "6 × 7 = ?", a: 42, wrong: [36, 48, 35, 49] },
+            { q: "8 × 9 = ?", a: 72, wrong: [63, 81, 64, 56] },
+            
+            // חידות מילוליות (תשובות מספריות)
+            { q: "כמה אפסים במאה?", a: 2, wrong: [1, 3, 0, 4] },
+            { q: "כמה עיניים לעכביש?", a: 8, wrong: [2, 4, 6, 10] },
+            { q: "כמה רגליים לכיסא?", a: 4, wrong: [2, 3, 5, 6] },
+        ];
+        
+        function getRandomRiddle() {
+            const available = riddles.filter(r => r !== currentRiddle);
+            return available[Math.floor(Math.random() * available.length)];
+        }
+        
+        function spawnFoods() {
+            foods = [];
+            const allNumbers = [currentRiddle.a, ...currentRiddle.wrong];
+            shuffleArray(allNumbers);
+            
+            const positions = [];
+            
+            for (const num of allNumbers) {
+                let pos;
+                let attempts = 0;
+                do {
+                    pos = {
+                        x: Math.floor(Math.random() * (GRID_SIZE - 2)) + 1,
+                        y: Math.floor(Math.random() * (GRID_SIZE - 2)) + 1
+                    };
+                    attempts++;
+                } while (
+                    attempts < 100 && 
+                    (isSnakeAt(pos.x, pos.y) || 
+                     positions.some(p => p.x === pos.x && p.y === pos.y) ||
+                     (Math.abs(pos.x - snake[0].x) < 3 && Math.abs(pos.y - snake[0].y) < 3))
+                );
+                
+                positions.push(pos);
+                foods.push({ ...pos, value: num, isCorrect: num === currentRiddle.a });
+            }
+        }
+        
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+        
+        function isSnakeAt(x, y) {
+            return snake.some(segment => segment.x === x && segment.y === y);
+        }
+        
+        function newRiddle() {
+            currentRiddle = getRandomRiddle();
+            riddleText.textContent = currentRiddle.q;
+            hintEl.textContent = "🎯 מצא ואכול את התשובה הנכונה!";
+            spawnFoods();
+        }
+        
+        function initGame() {
+            snake = [
+                { x: 10, y: 10 },
+                { x: 9, y: 10 },
+                { x: 8, y: 10 }
+            ];
+            direction = { x: 1, y: 0 };
+            nextDirection = { x: 1, y: 0 };
+            score = 0;
+            level = 1;
+            riddlesSolved = 0;
+            gameSpeed = 150;
+            
+            updateStats();
+            messageEl.textContent = "";
+            newRiddle();
+        }
+        
+        function updateStats() {
+            scoreEl.textContent = score;
+            levelEl.textContent = level;
+            riddlesSolvedEl.textContent = riddlesSolved;
+        }
+        
+        function draw() {
+            // רקע
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // רשת עדינה
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            for (let i = 0; i <= GRID_SIZE; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * CELL_SIZE, 0);
+                ctx.lineTo(i * CELL_SIZE, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * CELL_SIZE);
+                ctx.lineTo(canvas.width, i * CELL_SIZE);
+                ctx.stroke();
+            }
+            
+            // אוכל (מספרים) - כולם נראים אותו דבר!
+            for (const food of foods) {
+                const x = food.x * CELL_SIZE + CELL_SIZE / 2;
+                const y = food.y * CELL_SIZE + CELL_SIZE / 2;
+                
+                // עיגול רקע - כולם צהובים
+                ctx.beginPath();
+                ctx.arc(x, y, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 200, 50, 0.3)';
+                ctx.fill();
+                ctx.strokeStyle = '#ffc832';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // מספר
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(food.value, x, y);
+            }
+            
+            // נחש
+            for (let i = 0; i < snake.length; i++) {
+                const segment = snake[i];
+                const x = segment.x * CELL_SIZE;
+                const y = segment.y * CELL_SIZE;
+                
+                // גוף
+                const gradient = ctx.createRadialGradient(
+                    x + CELL_SIZE / 2, y + CELL_SIZE / 2, 0,
+                    x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE / 2
+                );
+                
+                if (i === 0) {
+                    // ראש
+                    gradient.addColorStop(0, '#00ff88');
+                    gradient.addColorStop(1, '#00cc6a');
+                } else {
+                    // גוף - גרדיאנט
+                    const alpha = 1 - (i / snake.length) * 0.5;
+                    gradient.addColorStop(0, `rgba(0, 255, 136, ${alpha})`);
+                    gradient.addColorStop(1, `rgba(0, 180, 100, ${alpha})`);
+                }
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.roundRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, 5);
+                ctx.fill();
+                
+                // עיניים לראש
+                if (i === 0) {
+                    ctx.fillStyle = '#1a1a2e';
+                    const eyeOffset = CELL_SIZE / 4;
+                    
+                    if (direction.x === 1) { // ימינה
+                        ctx.beginPath();
+                        ctx.arc(x + CELL_SIZE - 5, y + eyeOffset, 3, 0, Math.PI * 2);
+                        ctx.arc(x + CELL_SIZE - 5, y + CELL_SIZE - eyeOffset, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (direction.x === -1) { // שמאלה
+                        ctx.beginPath();
+                        ctx.arc(x + 5, y + eyeOffset, 3, 0, Math.PI * 2);
+                        ctx.arc(x + 5, y + CELL_SIZE - eyeOffset, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (direction.y === -1) { // למעלה
+                        ctx.beginPath();
+                        ctx.arc(x + eyeOffset, y + 5, 3, 0, Math.PI * 2);
+                        ctx.arc(x + CELL_SIZE - eyeOffset, y + 5, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else { // למטה
+                        ctx.beginPath();
+                        ctx.arc(x + eyeOffset, y + CELL_SIZE - 5, 3, 0, Math.PI * 2);
+                        ctx.arc(x + CELL_SIZE - eyeOffset, y + CELL_SIZE - 5, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+        }
+        
+        function update() {
+            direction = nextDirection;
+            
+            const head = { 
+                x: snake[0].x + direction.x, 
+                y: snake[0].y + direction.y 
+            };
+            
+            // בדיקת קירות
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+                gameOver("💥 פגעת בקיר!");
+                return;
+            }
+            
+            // בדיקת פגיעה עצמית
+            if (isSnakeAt(head.x, head.y)) {
+                gameOver("🔄 אכלת את עצמך!");
+                return;
+            }
+            
+            snake.unshift(head);
+            
+            // בדיקת אכילת מספר
+            const eatenFood = foods.find(f => f.x === head.x && f.y === head.y);
+            
+            if (eatenFood) {
+                if (eatenFood.isCorrect) {
+                    // תשובה נכונה!
+                    score += 10 * level;
+                    riddlesSolved++;
+                    
+                    messageEl.style.color = '#00ff88';
+                    messageEl.textContent = "✅ נכון! +" + (10 * level) + " נקודות";
+                    
+                    // עלייה ברמה
+                    if (riddlesSolved % 5 === 0) {
+                        level++;
+                        gameSpeed = Math.max(50, gameSpeed - 15);
+                        messageEl.textContent += " | 🎉 רמה " + level + "!";
+                    }
+                    
+                    updateStats();
+                    setTimeout(() => {
+                        messageEl.textContent = "";
+                        newRiddle();
+                    }, 1000);
+                } else {
+                    // תשובה שגויה - מאבד חלק מהזנב
+                    messageEl.style.color = '#ff6b6b';
+                    messageEl.textContent = "❌ לא נכון! התשובה היא " + currentRiddle.a;
+                    
+                    // מוריד 2 חלקים מהזנב
+                    if (snake.length > 3) {
+                        snake.pop();
+                        snake.pop();
+                    }
+                    
+                    score = Math.max(0, score - 5);
+                    updateStats();
+                    
+                    setTimeout(() => {
+                        messageEl.textContent = "";
+                        newRiddle();
+                    }, 1500);
+                }
+            } else {
+                snake.pop();
+            }
+            
+            draw();
+        }
+        
+        function gameOver(reason) {
+            clearInterval(gameLoop);
+            gameLoop = null;
+            
+            messageEl.style.color = '#ff6b6b';
+            messageEl.textContent = reason + " | ניקוד סופי: " + score;
+            startBtn.textContent = "שחק שוב";
+            startBtn.style.display = "block";
+        }
+        
+        function startGame() {
+            if (gameLoop) {
+                clearInterval(gameLoop);
+            }
+            
+            initGame();
+            draw();
+            
+            startBtn.style.display = "none";
+            gameLoop = setInterval(update, gameSpeed);
+        }
+        
+        // מקשים
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    if (direction.y !== 1) nextDirection = { x: 0, y: -1 };
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (direction.y !== -1) nextDirection = { x: 0, y: 1 };
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    if (direction.x !== 1) nextDirection = { x: -1, y: 0 };
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    if (direction.x !== -1) nextDirection = { x: 1, y: 0 };
+                    break;
+            }
+        });
+        
+        startBtn.addEventListener('click', startGame);
+        
+        // שליטה אינטואיטיבית - לחיצה ביחס לראש הנחש
+        function handleTap(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            
+            // מיקום הלחיצה על הקנבס
+            const tapX = (clientX - rect.left) / rect.width * GRID_SIZE;
+            const tapY = (clientY - rect.top) / rect.height * GRID_SIZE;
+            
+            // מיקום ראש הנחש
+            const headX = snake[0].x;
+            const headY = snake[0].y;
+            
+            // הפרש בין הלחיצה לראש
+            const dx = tapX - headX;
+            const dy = tapY - headY;
+            
+            // אם ההפרש האופקי גדול יותר - תנועה אופקית
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 0 && direction.x !== -1) {
+                    nextDirection = { x: 1, y: 0 }; // ימינה
+                } else if (dx < 0 && direction.x !== 1) {
+                    nextDirection = { x: -1, y: 0 }; // שמאלה
+                }
+            } else {
+                if (dy > 0 && direction.y !== -1) {
+                    nextDirection = { x: 0, y: 1 }; // למטה
+                } else if (dy < 0 && direction.y !== 1) {
+                    nextDirection = { x: 0, y: -1 }; // למעלה
+                }
+            }
+        }
+        
+        // מגע
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTap(e.touches[0].clientX, e.touches[0].clientY);
+        });
+        
+        // גם קליק רגיל (לבדיקה במחשב)
+        canvas.addEventListener('click', (e) => {
+            handleTap(e.clientX, e.clientY);
+        });
+        
+        // ציור ראשוני
+        draw();
+    </script>
+</body>
+</html>
