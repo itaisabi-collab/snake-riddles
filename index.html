@@ -50,6 +50,8 @@
             font-size: 1.3em;
             margin-bottom: 10px;
             line-height: 1.5;
+            direction: ltr;
+            unicode-bidi: plaintext;
         }
         
         #hint {
@@ -437,6 +439,9 @@
                         level++;
                         gameSpeed = Math.max(50, gameSpeed - 15);
                         messageEl.textContent += " | 🎉 רמה " + level + "!";
+                        // עדכון המהירות בפועל
+                        clearInterval(gameLoop);
+                        gameLoop = setInterval(update, gameSpeed);
                     }
                     
                     updateStats();
@@ -476,14 +481,22 @@
             
             messageEl.style.color = '#ff6b6b';
             messageEl.textContent = reason + " | ניקוד סופי: " + score;
-            startBtn.textContent = "שחק שוב";
+            startBtn.textContent = "🔄 שחק שוב";
             startBtn.style.display = "block";
+            
+            // הבהוב אדום בקנבס כדי שיהיה ברור שהמשחק נגמר
+            canvas.style.borderColor = '#ff6b6b';
+            canvas.style.boxShadow = '0 0 30px rgba(255, 107, 107, 0.5)';
         }
         
         function startGame() {
             if (gameLoop) {
                 clearInterval(gameLoop);
             }
+            
+            // איפוס סגנון הקנבס
+            canvas.style.borderColor = '#00ff88';
+            canvas.style.boxShadow = '0 0 30px rgba(0, 255, 136, 0.3)';
             
             initGame();
             draw();
@@ -522,6 +535,9 @@
         
         // שליטה אינטואיטיבית - לחיצה ביחס לראש הנחש
         function handleTap(clientX, clientY) {
+            // אם המשחק לא רץ, לא לעשות כלום
+            if (!gameLoop) return;
+            
             const rect = canvas.getBoundingClientRect();
             
             // מיקום הלחיצה על הקנבס
@@ -536,32 +552,56 @@
             const dx = tapX - headX;
             const dy = tapY - headY;
             
+            let newDir = null;
+            
             // אם ההפרש האופקי גדול יותר - תנועה אופקית
             if (Math.abs(dx) > Math.abs(dy)) {
                 if (dx > 0 && direction.x !== -1) {
-                    nextDirection = { x: 1, y: 0 }; // ימינה
+                    newDir = { x: 1, y: 0 }; // ימינה
                 } else if (dx < 0 && direction.x !== 1) {
-                    nextDirection = { x: -1, y: 0 }; // שמאלה
+                    newDir = { x: -1, y: 0 }; // שמאלה
                 }
             } else {
                 if (dy > 0 && direction.y !== -1) {
-                    nextDirection = { x: 0, y: 1 }; // למטה
+                    newDir = { x: 0, y: 1 }; // למטה
                 } else if (dy < 0 && direction.y !== 1) {
-                    nextDirection = { x: 0, y: -1 }; // למעלה
+                    newDir = { x: 0, y: -1 }; // למעלה
                 }
+            }
+            
+            if (newDir) {
+                nextDirection = newDir;
+                // פידבק ויזואלי קטן - הבהוב גבול
+                canvas.style.borderColor = '#fff';
+                setTimeout(() => canvas.style.borderColor = '#00ff88', 100);
             }
         }
         
-        // מגע
+        // מגע - עם תמיכה משופרת
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            handleTap(e.touches[0].clientX, e.touches[0].clientY);
-        });
+            e.stopPropagation();
+            if (e.touches.length > 0) {
+                handleTap(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
         
         // גם קליק רגיל (לבדיקה במחשב)
         canvas.addEventListener('click', (e) => {
             handleTap(e.clientX, e.clientY);
         });
+        
+        // מניעת זום בטלפון
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
         
         // ציור ראשוני
         draw();
