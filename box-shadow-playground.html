@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>Box Shadow Playground 🎨</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f0f23;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      grid-template-rows: 1fr auto;
+      height: 100vh;
+    }
+
+    /* RIGHT PANEL - Controls (RTL) */
+    .controls {
+      background: #1a1a2e;
+      padding: 20px;
+      overflow-y: auto;
+      border-left: 1px solid #333;
+      order: 2;
+    }
+
+    .controls h2 {
+      margin-bottom: 24px;
+      font-size: 20px;
+      color: #667eea;
+    }
+
+    .control-group {
+      margin-bottom: 20px;
+    }
+
+    .control-group label {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #333;
+      border-radius: 3px;
+      outline: none;
+      direction: ltr;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #667eea;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background: #764ba2;
+    }
+
+    .value-display {
+      text-align: left;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 14px;
+      color: #667eea;
+      margin-top: 4px;
+      direction: ltr;
+    }
+
+    input[type="color"] {
+      width: 100%;
+      height: 40px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      flex-direction: row-reverse;
+    }
+
+    .toggle input { display: none; }
+
+    .toggle-switch {
+      width: 44px;
+      height: 24px;
+      background: #333;
+      border-radius: 12px;
+      position: relative;
+      transition: background 0.3s;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      right: 2px;
+      transition: transform 0.3s;
+    }
+
+    .toggle input:checked + .toggle-switch {
+      background: #667eea;
+    }
+
+    .toggle input:checked + .toggle-switch::after {
+      transform: translateX(-20px);
+    }
+
+    /* LEFT - Live Preview */
+    .preview {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16162a 100%);
+      overflow: hidden;
+      order: 1;
+    }
+
+    .preview-box {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      transition: all 0.2s ease;
+    }
+
+    /* BOTTOM - CSS Output */
+    .prompt-output {
+      grid-column: 1 / -1;
+      background: #0a0a1a;
+      border-top: 1px solid #333;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      order: 3;
+    }
+
+    .prompt-output code {
+      flex: 1;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 13px;
+      color: #a0a0ff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      direction: ltr;
+      text-align: left;
+    }
+
+    .copy-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover {
+      background: #764ba2;
+      transform: scale(1.05);
+    }
+
+    .divider {
+      height: 1px;
+      background: #333;
+      margin: 20px 0;
+    }
+
+    .presets {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .preset-btn {
+      background: #2a2a3e;
+      border: 1px solid #444;
+      color: #e0e0e0;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .preset-btn:hover {
+      background: #3a3a4e;
+      border-color: #667eea;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- CONTROLS PANEL -->
+    <div class="controls">
+      <h2>⚙️ בקרות</h2>
+
+      <div class="control-group">
+        <label>הזזה אופקית (X)</label>
+        <input type="range" id="offsetX" min="-50" max="50" value="10">
+        <div class="value-display"><span id="offsetX-val">10</span>px</div>
+      </div>
+
+      <div class="control-group">
+        <label>הזזה אנכית (Y)</label>
+        <input type="range" id="offsetY" min="-50" max="50" value="10">
+        <div class="value-display"><span id="offsetY-val">10</span>px</div>
+      </div>
+
+      <div class="control-group">
+        <label>טשטוש (Blur)</label>
+        <input type="range" id="blur" min="0" max="100" value="20">
+        <div class="value-display"><span id="blur-val">20</span>px</div>
+      </div>
+
+      <div class="control-group">
+        <label>התפשטות (Spread)</label>
+        <input type="range" id="spread" min="-50" max="50" value="0">
+        <div class="value-display"><span id="spread-val">0</span>px</div>
+      </div>
+
+      <div class="control-group">
+        <label>צבע הצל</label>
+        <input type="color" id="shadowColor" value="#000000">
+      </div>
+
+      <div class="control-group">
+        <label>שקיפות</label>
+        <input type="range" id="opacity" min="0" max="100" value="50">
+        <div class="value-display"><span id="opacity-val">50</span>%</div>
+      </div>
+
+      <div class="control-group">
+        <label class="toggle">
+          <input type="checkbox" id="inset">
+          <span class="toggle-switch"></span>
+          צל פנימי (Inset)
+        </label>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="control-group">
+        <label>פריסטים מוכנים</label>
+        <div class="presets">
+          <button class="preset-btn" onclick="applyPreset('soft')">🌫️ רך</button>
+          <button class="preset-btn" onclick="applyPreset('hard')">💎 חד</button>
+          <button class="preset-btn" onclick="applyPreset('neon')">💜 ניאון</button>
+          <button class="preset-btn" onclick="applyPreset('layered')">📚 שכבות</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE PREVIEW -->
+    <div class="preview">
+      <div class="preview-box" id="preview">
+        📦
+      </div>
+    </div>
+
+    <!-- CSS OUTPUT -->
+    <div class="prompt-output">
+      <code id="css-output">box-shadow: 10px 10px 20px rgba(0,0,0,0.5);</code>
+      <button class="copy-btn" onclick="copyCSS()">📋 העתק CSS</button>
+    </div>
+  </div>
+
+  <script>
+    const controls = {
+      offsetX: document.getElementById('offsetX'),
+      offsetY: document.getElementById('offsetY'),
+      blur: document.getElementById('blur'),
+      spread: document.getElementById('spread'),
+      shadowColor: document.getElementById('shadowColor'),
+      opacity: document.getElementById('opacity'),
+      inset: document.getElementById('inset')
+    };
+
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 0, g: 0, b: 0 };
+    }
+
+    function update() {
+      const values = {
+        offsetX: parseInt(controls.offsetX.value),
+        offsetY: parseInt(controls.offsetY.value),
+        blur: parseInt(controls.blur.value),
+        spread: parseInt(controls.spread.value),
+        color: controls.shadowColor.value,
+        opacity: parseInt(controls.opacity.value) / 100,
+        inset: controls.inset.checked
+      };
+
+      // Update displays
+      document.getElementById('offsetX-val').textContent = values.offsetX;
+      document.getElementById('offsetY-val').textContent = values.offsetY;
+      document.getElementById('blur-val').textContent = values.blur;
+      document.getElementById('spread-val').textContent = values.spread;
+      document.getElementById('opacity-val').textContent = Math.round(values.opacity * 100);
+
+      // Generate CSS
+      const rgb = hexToRgb(values.color);
+      const insetStr = values.inset ? 'inset ' : '';
+      const shadowCSS = `${insetStr}${values.offsetX}px ${values.offsetY}px ${values.blur}px ${values.spread}px rgba(${rgb.r},${rgb.g},${rgb.b},${values.opacity})`;
+
+      // Apply to preview
+      document.getElementById('preview').style.boxShadow = shadowCSS;
+
+      // Update CSS output
+      document.getElementById('css-output').textContent = `box-shadow: ${shadowCSS};`;
+    }
+
+    function copyCSS() {
+      const css = document.getElementById('css-output').textContent;
+      navigator.clipboard.writeText(css);
+      const btn = document.querySelector('.copy-btn');
+      btn.textContent = '✓ הועתק!';
+      setTimeout(() => btn.textContent = '📋 העתק CSS', 1500);
+    }
+
+    function applyPreset(name) {
+      const presets = {
+        soft: { offsetX: 0, offsetY: 10, blur: 40, spread: 0, color: '#000000', opacity: 25, inset: false },
+        hard: { offsetX: 8, offsetY: 8, blur: 0, spread: 0, color: '#000000', opacity: 80, inset: false },
+        neon: { offsetX: 0, offsetY: 0, blur: 30, spread: 5, color: '#667eea', opacity: 80, inset: false },
+        layered: { offsetX: 5, offsetY: 5, blur: 15, spread: 0, color: '#000000', opacity: 30, inset: false }
+      };
+
+      const p = presets[name];
+      controls.offsetX.value = p.offsetX;
+      controls.offsetY.value = p.offsetY;
+      controls.blur.value = p.blur;
+      controls.spread.value = p.spread;
+      controls.shadowColor.value = p.color;
+      controls.opacity.value = p.opacity * 100;
+      controls.inset.checked = p.inset;
+      update();
+    }
+
+    // Event listeners
+    Object.values(controls).forEach(el => {
+      el.addEventListener('input', update);
+      el.addEventListener('change', update);
+    });
+
+    // Initial
+    update();
+  </script>
+</body>
+</html>
