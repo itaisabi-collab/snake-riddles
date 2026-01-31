@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Snake Riddles</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -131,7 +132,6 @@
             color: #ff6b6b;
         }
 
-        /* Modal styles */
         .modal {
             display: none;
             position: fixed;
@@ -158,6 +158,8 @@
             width: 400px;
             text-align: center;
             box-shadow: 0 0 50px rgba(0, 255, 136, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal h2 {
@@ -194,7 +196,6 @@
             color: rgba(255, 255, 255, 0.5);
         }
 
-        /* Leaderboard styles */
         .leaderboard {
             margin-top: 20px;
             text-align: right;
@@ -270,6 +271,22 @@
             justify-content: center;
             flex-wrap: wrap;
         }
+
+        .global-badge {
+            background: linear-gradient(135deg, #ffc832, #ff6b6b);
+            color: #1a1a2e;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.7em;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .loading {
+            color: #888;
+            padding: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -298,7 +315,6 @@
         </div>
     </div>
 
-    <!-- Game Over Modal -->
     <div class="modal" id="game-over-modal">
         <div class="modal-content">
             <h2>🎮 Game Over!</h2>
@@ -309,7 +325,7 @@
                 <button class="btn" id="save-score-btn">שמור ניקוד</button>
             </div>
             <div class="leaderboard" id="leaderboard">
-                <h3>🏆 טבלת הליגה</h3>
+                <h3>🏆 טבלת הליגה העולמית <span class="global-badge">GLOBAL</span></h3>
                 <div id="leaderboard-entries"></div>
             </div>
             <div class="btn-group">
@@ -321,6 +337,11 @@
     <script>
     (function() {
         'use strict';
+
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://whpdshyifbvihfvxnqjz.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_LowymS9pfWBQZXXrKuqE8A_sHQXw9cx';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // DOM Elements
         const canvas = document.getElementById('game-canvas');
@@ -334,7 +355,6 @@
         const startBtn = document.getElementById('start-btn');
         const gameContainer = document.querySelector('.game-container');
 
-        // Modal Elements
         const modal = document.getElementById('game-over-modal');
         const gameOverReason = document.getElementById('game-over-reason');
         const finalScoreEl = document.getElementById('final-score');
@@ -343,15 +363,12 @@
         const playAgainBtn = document.getElementById('play-again-btn');
         const leaderboardEntries = document.getElementById('leaderboard-entries');
 
-        // Game Constants
         const GRID_SIZE = 20;
         const CELL_SIZE = canvas.width / GRID_SIZE;
         const BASE_SPEED = 150;
         const MIN_SPEED = 70;
         const SPEED_DECREASE_PER_LEVEL = 10;
-        const STORAGE_KEY = 'snakeRiddlesLeaderboard';
 
-        // Game State
         let snake = [];
         let direction = { x: 1, y: 0 };
         let nextDirection = { x: 1, y: 0 };
@@ -366,7 +383,6 @@
         let growPending = 0;
         let lastSavedEntry = null;
 
-        // Riddles Database
         const riddles = [
             { q: "5 + 3 = ?", a: 8, wrong: [5, 3, 7, 9] },
             { q: "10 - 4 = ?", a: 6, wrong: [4, 10, 5, 7] },
@@ -390,44 +406,43 @@
             { q: "עיניים לעכביש?", a: 8, wrong: [2, 4, 6, 10] },
         ];
 
-        // Leaderboard Functions
-        function getLeaderboard() {
+        // Global Leaderboard Functions
+        async function getLeaderboard() {
             try {
-                const data = localStorage.getItem(STORAGE_KEY);
-                return data ? JSON.parse(data) : [];
+                const { data, error } = await supabase
+                    .from('leaderboard')
+                    .select('*')
+                    .order('score', { ascending: false })
+                    .limit(10);
+                
+                if (error) throw error;
+                return data || [];
             } catch (e) {
+                console.error('Failed to fetch leaderboard:', e);
                 return [];
             }
         }
 
-        function saveLeaderboard(leaderboard) {
+        async function addScore(name, score) {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(leaderboard));
+                const { data, error } = await supabase
+                    .from('leaderboard')
+                    .insert([{ player_name: name.trim() || 'אנונימי', score: score }])
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                return data;
             } catch (e) {
-                console.error('Failed to save leaderboard:', e);
+                console.error('Failed to save score:', e);
+                return null;
             }
         }
 
-        function addScore(name, score) {
-            const leaderboard = getLeaderboard();
-            const entry = {
-                name: name.trim() || 'אנונימי',
-                score: score,
-                date: new Date().toISOString()
-            };
-            leaderboard.push(entry);
-            // Sort by score descending
-            leaderboard.sort((a, b) => b.score - a.score);
-            // Keep top 100
-            if (leaderboard.length > 100) {
-                leaderboard.length = 100;
-            }
-            saveLeaderboard(leaderboard);
-            return entry;
-        }
-
-        function renderLeaderboard(highlightEntry = null) {
-            const leaderboard = getLeaderboard();
+        async function renderLeaderboard(highlightId = null) {
+            leaderboardEntries.innerHTML = '<div class="loading">טוען טבלה עולמית...</div>';
+            
+            const leaderboard = await getLeaderboard();
             leaderboardEntries.innerHTML = '';
 
             if (leaderboard.length === 0) {
@@ -435,17 +450,11 @@
                 return;
             }
 
-            // Show top 10
-            const topEntries = leaderboard.slice(0, 10);
-            topEntries.forEach((entry, index) => {
+            leaderboard.forEach((entry, index) => {
                 const div = document.createElement('div');
                 div.className = 'leaderboard-entry';
                 
-                // Highlight the just-saved entry
-                if (highlightEntry && 
-                    entry.name === highlightEntry.name && 
-                    entry.score === highlightEntry.score &&
-                    entry.date === highlightEntry.date) {
+                if (highlightId && entry.id === highlightId) {
                     div.classList.add('highlight');
                 }
 
@@ -453,7 +462,7 @@
                 
                 div.innerHTML = `
                     <span class="rank">${medal}</span>
-                    <span class="player-name">${escapeHtml(entry.name)}</span>
+                    <span class="player-name">${escapeHtml(entry.player_name)}</span>
                     <span class="player-score">${entry.score}</span>
                 `;
                 leaderboardEntries.appendChild(div);
@@ -466,7 +475,6 @@
             return div.innerHTML;
         }
 
-        // Utility Functions
         function shuffleArray(arr) {
             const result = [...arr];
             for (let i = result.length - 1; i > 0; i--) {
@@ -478,10 +486,6 @@
 
         function isSnakeAt(x, y) {
             return snake.some(seg => seg.x === x && seg.y === y);
-        }
-
-        function isFoodAt(x, y) {
-            return foods.some(f => f.x === x && f.y === y);
         }
 
         function getRandomRiddle() {
@@ -504,7 +508,6 @@
             return true;
         }
 
-        // Game Functions
         function spawnFoods() {
             foods = [];
             const allNumbers = shuffleArray([currentRiddle.a, ...currentRiddle.wrong]);
@@ -772,20 +775,17 @@
             canvas.style.borderColor = '#ff6b6b';
             canvas.style.boxShadow = '0 0 30px rgba(255, 107, 107, 0.5)';
 
-            // Show modal
             gameOverReason.textContent = reason;
             finalScoreEl.textContent = score;
             playerNameInput.value = '';
             lastSavedEntry = null;
             
-            // Update button states
             saveScoreBtn.disabled = false;
             saveScoreBtn.textContent = 'שמור ניקוד';
             
             renderLeaderboard();
             modal.classList.add('active');
             
-            // Focus on name input
             setTimeout(() => playerNameInput.focus(), 100);
         }
 
@@ -808,26 +808,30 @@
             gameLoopId = setTimeout(update, gameSpeed);
         }
 
-        // Save score button
-        saveScoreBtn.addEventListener('click', () => {
-            if (lastSavedEntry) return; // Already saved
-            
-            const name = playerNameInput.value.trim() || 'אנונימי';
-            lastSavedEntry = addScore(name, score);
-            renderLeaderboard(lastSavedEntry);
+        saveScoreBtn.addEventListener('click', async () => {
+            if (lastSavedEntry) return;
             
             saveScoreBtn.disabled = true;
-            saveScoreBtn.textContent = 'נשמר! ✓';
+            saveScoreBtn.textContent = 'שומר...';
+            
+            const name = playerNameInput.value.trim() || 'אנונימי';
+            lastSavedEntry = await addScore(name, score);
+            
+            if (lastSavedEntry) {
+                saveScoreBtn.textContent = 'נשמר! ✓';
+                await renderLeaderboard(lastSavedEntry.id);
+            } else {
+                saveScoreBtn.textContent = 'שגיאה - נסה שוב';
+                saveScoreBtn.disabled = false;
+            }
         });
 
-        // Enter key saves score
         playerNameInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 saveScoreBtn.click();
             }
         });
 
-        // Play again button
         playAgainBtn.addEventListener('click', startGame);
 
         function setDirection(newDir) {
@@ -839,7 +843,6 @@
             nextDirection = { ...newDir };
         }
 
-        // Keyboard Controls
         document.addEventListener('keydown', (e) => {
             switch(e.key) {
                 case 'ArrowUp':
@@ -869,7 +872,6 @@
             }
         });
 
-        // Touch Controls
         let touchStartX = 0;
         let touchStartY = 0;
         let touchStartTime = 0;
